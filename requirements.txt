@@ -1,4 +1,7 @@
+
 playwright
 python-telegram-bot
-schedule
-dotenv
+python-dotenv
+
+# Para instalar los browsers de Playwright (ejecutar después de instalar dependencias):
+# python -m playwright install
