@@ -1,2 +1,1 @@
-release: python -m playwright install
-web: python main.py
+web: sh heroku-buildpack-playwright.sh && python main.py
