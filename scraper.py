@@ -6,14 +6,20 @@ from config import HEADLESS
 
 async def get_available_dates():
     async with async_playwright() as p:
-        # Use buildpack environment variables for browser path
-        chromium_path = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
-        if chromium_path:
-            chromium_path = os.path.join(chromium_path, "chromium-1091/chrome-linux/chrome")
+        # The buildpack sets up browsers in /app/browsers or similar
+        chromium_path = None
         
-        # If buildpack path not available, fallback to environment variable
-        if not chromium_path or not os.path.exists(chromium_path):
-            chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
+        # Try different paths that the buildpack might use
+        possible_paths = [
+            os.getenv("CHROMIUM_EXECUTABLE_PATH"),
+            "/app/browsers/chromium-1091/chrome-linux/chrome",
+            "/browsers/chromium-1091/chrome-linux/chrome",
+        ]
+        
+        for path in possible_paths:
+            if path and os.path.exists(path):
+                chromium_path = path
+                break
         
         # Configuración robusta para Heroku
         browser_args = [
