@@ -21,11 +21,34 @@ async def get_available_dates():
         await page.wait_for_selector(".k-calendar")
         calendario = await page.query_selector(".k-calendar")
         dias = []
+        dia_agendado = None
+        error_modal = False
         if calendario:
             dias_celdas = await calendario.query_selector_all("td:not(.k-state-disabled) a.k-link")
             for celda in dias_celdas:
                 texto = await celda.inner_text()
                 if texto.strip():
                     dias.append(texto.strip())
+
+            # Intentar seleccionar cada día disponible
+            for celda in dias_celdas:
+                try:
+                    await celda.click()
+                    # Esperar a ver si aparece el modal de error
+                    modal = await page.query_selector("div[nombrepantalla='ModalError']")
+                    if modal:
+                        error_modal = True
+                        btn_cerrar = await modal.query_selector("#control_39")
+                        if btn_cerrar:
+                            await btn_cerrar.click()
+                        break
+                    else:
+                        dia_agendado = await celda.inner_text()
+                        break
+                except Exception:
+                    continue
+
         await browser.close()
-        return dias
+        if error_modal:
+            return {"error": True, "dias": dias, "dia_agendado": None}
+        return {"error": False, "dias": dias, "dia_agendado": dia_agendado}

@@ -9,12 +9,19 @@ from notifier import send_message
 import asyncio
 import time
 
+
 async def run_periodically():
     while True:
         try:
-            dias = await get_available_dates()
-            if dias:
-                mensaje = f"✅ ¡Hay citas disponibles en DIAN! Días: {', '.join(dias)}"
+            resultado = await get_available_dates()
+            if resultado["error"]:
+                print("No hay agendas disponibles.")
+            elif resultado["dia_agendado"]:
+                mensaje = f"✅ ¡Hay agenda disponible el día {resultado['dia_agendado']}!"
+                await send_message(mensaje)
+                print(mensaje)
+            elif resultado["dias"]:
+                mensaje = f"✅ ¡Hay citas disponibles en DIAN! Días: {', '.join(resultado['dias'])}"
                 await send_message(mensaje)
                 print(mensaje)
             else:
