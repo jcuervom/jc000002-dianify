@@ -1,7 +1,7 @@
 
 playwright==1.40.0
-python-telegram-bot
-python-dotenv
+python-telegram-bot==20.7
+python-dotenv==1.0.0
 
 # Para instalar los browsers de Playwright (ejecutar después de instalar dependencias):
-# python -m playwright install
+# python -m playwright install --with-deps chromium
