@@ -6,20 +6,40 @@ from config import HEADLESS
 
 async def get_available_dates():
     async with async_playwright() as p:
-        # The buildpack sets up browsers in /app/browsers or similar
+        # Try to find the Chrome executable path
         chromium_path = None
         
-        # Try different paths that the buildpack might use
+        # Check various environment variables and paths
         possible_paths = [
+            os.getenv("PLAYWRIGHT_BROWSERS_PATH"),
             os.getenv("CHROMIUM_EXECUTABLE_PATH"),
-            "/app/browsers/chromium-1091/chrome-linux/chrome",
-            "/browsers/chromium-1091/chrome-linux/chrome",
+            "/app/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+            "/app/browsers/chromium-*/chrome-linux/chrome",
+            "/tmp/playwright_browsers/chromium-*/chrome-linux/chrome"
         ]
         
-        for path in possible_paths:
-            if path and os.path.exists(path):
-                chromium_path = path
-                break
+        # Also check if there's a browsers path file
+        browsers_path_file = "/app/.playwright-browsers-path"
+        if os.path.exists(browsers_path_file):
+            with open(browsers_path_file, 'r') as f:
+                browsers_path = f.read().strip()
+                possible_paths.insert(0, os.path.join(browsers_path, "chromium-*/chrome-linux/chrome"))
+        
+        # Find the actual executable
+        import glob
+        for path_pattern in possible_paths:
+            if path_pattern:
+                if '*' in path_pattern:
+                    matches = glob.glob(path_pattern)
+                    if matches:
+                        chromium_path = matches[0]
+                        break
+                elif os.path.exists(path_pattern):
+                    chromium_path = path_pattern
+                    break
+        
+        # Debug: print the path being used
+        print(f"🔍 Using Chromium path: {chromium_path}")
         
         # Configuración robusta para Heroku
         browser_args = [

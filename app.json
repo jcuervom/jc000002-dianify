@@ -4,10 +4,13 @@
   "stack": "heroku-22",
   "buildpacks": [
     {
+      "url": "heroku-community/apt"
+    },
+    {
       "url": "heroku/python"
     },
     {
-      "url": "https://github.com/Thomas-Boi/heroku-playwright-python-browsers.git"
+      "url": "https://github.com/mxschmitt/heroku-playwright-buildpack.git"
     }
   ],
   "env": {
