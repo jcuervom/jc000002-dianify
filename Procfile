@@ -1,1 +1,1 @@
-web: sh heroku-buildpack-playwright.sh && python main.py
+web: python main.py
