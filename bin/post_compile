@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
-echo "-----> Installing Playwright browsers..."
-python -m playwright install --with-deps chromium
-echo "-----> Playwright installation complete"
+echo "-----> Post-compile script: Verifying Playwright setup..."
+
+# The Playwright buildpack should have already installed browsers
+# But let's make sure we have them
+if [ ! -d "/app/browsers" ]; then
+    echo "-----> Installing Playwright browsers..."
+    python -m playwright install chromium
+else
+    echo "-----> Playwright browsers already available"
+fi
+
+echo "-----> Post-compile script complete"

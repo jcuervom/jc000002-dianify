@@ -1,0 +1,19 @@
+{
+  "name": "CitasDian",
+  "description": "Bot para verificar citas disponibles en DIAN",
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "https://github.com/Thomas-Boi/heroku-playwright-python-browsers.git"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "PLAYWRIGHT_BROWSERS_PATH": {
+      "description": "Path to Playwright browsers (set by buildpack)",
+      "required": false
+    }
+  }
+}
