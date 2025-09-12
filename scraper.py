@@ -1,11 +1,13 @@
 import re
+import os
 from playwright.async_api import async_playwright
 from notifier import send_message
 from config import HEADLESS
 
 async def get_available_dates():
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=HEADLESS, slow_mo=150)
+        chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
+        browser = await p.chromium.launch(headless=HEADLESS, slow_mo=150, executable_path=chromium_path)
         context = await browser.new_context()
         page = await context.new_page()
 
