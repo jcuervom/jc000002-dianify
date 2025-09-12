@@ -41,3 +41,25 @@ python main.py
 ```
 
 El bot revisará periódicamente la página de la DIAN y enviará una notificación por Telegram si hay citas disponibles.
+
+## Despliegue en Heroku
+
+Este proyecto está configurado para desplegarse en Heroku usando los siguientes buildpacks:
+
+1. `heroku-community/apt` - Para dependencias del sistema
+2. `heroku/python` - Para Python
+3. `https://github.com/playwright-community/heroku-playwright-buildpack.git` - Para Playwright
+
+### Variables de entorno en Heroku
+
+- `TELEGRAM_TOKEN`: Tu token de bot de Telegram
+- `TELEGRAM_CHAT_ID`: Tu chat ID de Telegram
+- `PLAYWRIGHT_BUILDPACK_BROWSERS=chromium`: Especifica qué navegador instalar
+
+### Solución de problemas en Heroku
+
+Si encuentras errores relacionados con Playwright en Heroku:
+
+1. Verifica que uses el buildpack correcto: `https://github.com/playwright-community/heroku-playwright-buildpack.git`
+2. Ejecuta el script de verificación: `python bin/verify_playwright.py`
+3. Revisa los logs de construcción para asegurar que Chromium se instaló correctamente

@@ -1,42 +1,45 @@
 import re
 import os
+import glob
 from playwright.async_api import async_playwright
 from notifier import send_message
 from config import HEADLESS
 
 async def get_available_dates():
     async with async_playwright() as p:
-        # Try to find the Chrome executable path
+        # Try to find the Chrome executable path for Heroku
         chromium_path = None
         
-        # Check various environment variables and paths
-        possible_paths = [
-            os.getenv("PLAYWRIGHT_BROWSERS_PATH"),
-            os.getenv("CHROMIUM_EXECUTABLE_PATH"),
-            "/app/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-            "/app/browsers/chromium-*/chrome-linux/chrome",
-            "/tmp/playwright_browsers/chromium-*/chrome-linux/chrome"
-        ]
-        
-        # Also check if there's a browsers path file
-        browsers_path_file = "/app/.playwright-browsers-path"
-        if os.path.exists(browsers_path_file):
-            with open(browsers_path_file, 'r') as f:
-                browsers_path = f.read().strip()
-                possible_paths.insert(0, os.path.join(browsers_path, "chromium-*/chrome-linux/chrome"))
-        
-        # Find the actual executable
-        import glob
-        for path_pattern in possible_paths:
-            if path_pattern:
-                if '*' in path_pattern:
-                    matches = glob.glob(path_pattern)
+        # On Heroku, check for the buildpack-installed browsers
+        if os.getenv("DYNO"):  # We're on Heroku
+            # The playwright-community buildpack sets PLAYWRIGHT_BROWSERS_PATH
+            browsers_path = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
+            if browsers_path:
+                print(f"🔍 Found PLAYWRIGHT_BROWSERS_PATH: {browsers_path}")
+                # Look for chromium executable
+                import glob
+                chromium_pattern = os.path.join(browsers_path, "chromium-*/chrome-linux/chrome")
+                matches = glob.glob(chromium_pattern)
+                if matches:
+                    chromium_path = matches[0]
+                    print(f"🔍 Found Chromium at: {chromium_path}")
+            
+            # Fallback: try other common Heroku paths
+            if not chromium_path:
+                fallback_patterns = [
+                    "/app/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+                    "/tmp/playwright_browsers/chromium-*/chrome-linux/chrome"
+                ]
+                
+                for pattern in fallback_patterns:
+                    matches = glob.glob(pattern)
                     if matches:
                         chromium_path = matches[0]
+                        print(f"🔍 Found Chromium via fallback: {chromium_path}")
                         break
-                elif os.path.exists(path_pattern):
-                    chromium_path = path_pattern
-                    break
+        else:
+            # Local development - let Playwright handle it automatically
+            print("🔍 Running locally - using default Playwright browser")
         
         # Debug: print the path being used
         print(f"🔍 Using Chromium path: {chromium_path}")
@@ -64,7 +67,7 @@ async def get_available_dates():
         browser = await p.chromium.launch(
             headless=HEADLESS, 
             slow_mo=100,
-            executable_path=chromium_path,
+            executable_path=chromium_path if chromium_path else None,
             args=browser_args
         )
         
