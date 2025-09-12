@@ -1,0 +1,4 @@
+# Explicit buildpack order to avoid conflicts
+# 1. APT buildpack for any custom system dependencies
+# 2. Python buildpack for Python runtime and dependencies
+# 3. Playwright buildpack for browser installation

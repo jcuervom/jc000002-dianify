@@ -17,6 +17,11 @@
     "PLAYWRIGHT_BROWSERS_PATH": {
       "description": "Path to Playwright browsers (set by buildpack)",
       "required": false
+    },
+    "PLAYWRIGHT_BUILDPACK_BROWSERS": {
+      "description": "Browsers to install with Playwright buildpack",
+      "value": "chromium",
+      "required": false
     }
   }
 }

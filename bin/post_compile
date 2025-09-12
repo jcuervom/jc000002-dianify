@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
-echo "-----> Post-compile: Playwright setup should be handled by buildpack"
-echo "-----> Verifying browser installation..."
+set -e
 
+echo "-----> Post-compile: Starting Playwright verification"
+
+# Check if Playwright browsers were installed by the buildpack
 if [ -f "/app/.playwright-browsers-path" ]; then
     echo "-----> Playwright browsers path file found"
-    cat /app/.playwright-browsers-path
+    BROWSERS_PATH=$(cat /app/.playwright-browsers-path)
+    echo "       Browsers installed at: $BROWSERS_PATH"
+    export PLAYWRIGHT_BROWSERS_PATH="$BROWSERS_PATH"
+else
+    echo "-----> Warning: Playwright browsers path file not found"
+    echo "       This might indicate an issue with the Playwright buildpack"
+fi
+
+# Verify Playwright installation
+if command -v python3 >/dev/null 2>&1; then
+    echo "-----> Verifying Playwright installation..."
+    python3 -c "import playwright; print(f'Playwright version: {playwright.__version__}')" || echo "       Warning: Could not import Playwright"
+else
+    echo "-----> Warning: Python3 not found in PATH"
 fi
 
 echo "-----> Post-compile complete"

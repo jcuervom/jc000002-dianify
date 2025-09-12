@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Deployment verification script
+# Run this after deployment to verify everything is working
+
+echo "🚀 Verifying CitasDian deployment..."
+
+# Check Python
+echo "📋 Checking Python installation..."
+python3 --version
+
+# Check Playwright
+echo "📋 Checking Playwright installation..."
+python3 -c "
+try:
+    import playwright
+    print(f'✅ Playwright version: {playwright.__version__}')
+except ImportError as e:
+    print(f'❌ Playwright import failed: {e}')
+"
+
+# Check environment variables
+echo "📋 Checking environment variables..."
+echo "PLAYWRIGHT_BROWSERS_PATH: ${PLAYWRIGHT_BROWSERS_PATH:-'Not set'}"
+echo "PLAYWRIGHT_BUILDPACK_BROWSERS: ${PLAYWRIGHT_BUILDPACK_BROWSERS:-'Not set'}"
+
+# Check if browsers are available
+echo "📋 Checking browser installation..."
+if [ -n "$PLAYWRIGHT_BROWSERS_PATH" ] && [ -d "$PLAYWRIGHT_BROWSERS_PATH" ]; then
+    echo "✅ Browser directory exists at: $PLAYWRIGHT_BROWSERS_PATH"
+    ls -la "$PLAYWRIGHT_BROWSERS_PATH" 2>/dev/null || echo "   (Could not list contents)"
+else
+    echo "❌ Browser directory not found or PLAYWRIGHT_BROWSERS_PATH not set"
+fi
+
+echo "📋 Verification complete!"

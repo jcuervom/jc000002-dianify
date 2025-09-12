@@ -1,13 +1,3 @@
-libatk1.0-0
-libatk-bridge2.0-0
-libdrm2
-libxkbcommon0
-libxcomposite1
-libxdamage1
-libxrandr2
-libgbm1
-libxss1
-libasound2
-libatspi2.0-0
-libgtk-3-0
-libgdk-pixbuf2.0-0
+# Core system dependencies for applications that may not be covered by Playwright buildpack
+# Most Playwright dependencies are handled by the heroku-playwright-buildpack
+# Only include essential packages that are specifically needed by your application
