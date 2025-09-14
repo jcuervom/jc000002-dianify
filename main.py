@@ -42,7 +42,7 @@ async def run_periodically():
             
             # Añadir timeout para evitar que Heroku mate el proceso
             try:
-                resultado = await asyncio.wait_for(get_available_dates(), timeout=120)  # 2 minutos máximo
+                resultado = await asyncio.wait_for(get_available_dates(), timeout=180)  # 3 minutos máximo
             except asyncio.TimeoutError:
                 print("⚠️ Timeout en la verificación de citas")
                 consecutive_errors += 1

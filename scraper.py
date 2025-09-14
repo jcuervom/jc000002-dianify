@@ -122,36 +122,45 @@ async def get_available_dates():
             await page.locator("#control_194").get_by_role("img").click()
 
             print("🔍 Waiting for calendar...")
-            await page.wait_for_selector(".k-calendar", timeout=20000)  # Reducir timeout
+            await page.wait_for_selector(".k-calendar", timeout=45000)  # Aumentar a 45 segundos
             calendario = await page.query_selector(".k-calendar")
             dias = []
             dia_agendado = None
             error_modal = False
             
             if calendario:
+                print("✅ Calendario encontrado, buscando días disponibles...")
                 dias_celdas = await calendario.query_selector_all("td:not(.k-state-disabled) a.k-link")
+                print(f"🔍 Días disponibles encontrados: {len(dias_celdas)}")
+                
                 for celda in dias_celdas:
                     texto = await celda.inner_text()
                     if texto.strip():
                         dias.append(texto.strip())
 
                 # Intentar seleccionar cada día disponible
-                for celda in dias_celdas:
-                    try:
-                        await celda.click()
-                        # Esperar a ver si aparece el modal de error
-                        modal = await page.query_selector("div[nombrepantalla='ModalError']")
-                        if modal:
-                            error_modal = True
-                            btn_cerrar = await modal.query_selector("#control_39")
-                            if btn_cerrar:
-                                await btn_cerrar.click()
-                            break
-                        else:
-                            dia_agendado = await celda.inner_text()
-                            break
-                    except Exception:
-                        continue
+                if dias_celdas:
+                    print(f"🔍 Intentando hacer click en el primer día: {dias[0] if dias else 'Sin días'}")
+                    for celda in dias_celdas:
+                        try:
+                            await celda.click()
+                            # Esperar a ver si aparece el modal de error
+                            modal = await page.query_selector("div[nombrepantalla='ModalError']")
+                            if modal:
+                                error_modal = True
+                                btn_cerrar = await modal.query_selector("#control_39")
+                                if btn_cerrar:
+                                    await btn_cerrar.click()
+                                break
+                            else:
+                                dia_agendado = await celda.inner_text()
+                                break
+                        except Exception:
+                            continue
+                else:
+                    print("ℹ️ No hay días disponibles en el calendario")
+            else:
+                print("❌ No se pudo encontrar el calendario")
 
             await browser.close()
             if error_modal:
