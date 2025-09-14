@@ -1,3 +1,0 @@
-# Core system dependencies for applications that may not be covered by Playwright buildpack
-# Most Playwright dependencies are handled by the heroku-playwright-buildpack
-# Only include essential packages that are specifically needed by your application
