@@ -12,12 +12,8 @@ async def get_available_dates():
         
         # On Heroku, check for the buildpack-installed browsers
         if os.getenv("DYNO"):  # We're on Heroku
-            # Debug: Print all relevant environment variables
+            # En producción, mostrar menos debug info para acelerar startup
             print(f"🔍 CHROMIUM_EXECUTABLE_PATH: {repr(os.getenv('CHROMIUM_EXECUTABLE_PATH'))}")
-            print(f"🔍 FIREFOX_EXECUTABLE_PATH: {repr(os.getenv('FIREFOX_EXECUTABLE_PATH'))}")
-            print(f"🔍 WEBKIT_EXECUTABLE_PATH: {repr(os.getenv('WEBKIT_EXECUTABLE_PATH'))}")
-            print(f"🔍 PLAYWRIGHT_BROWSERS_PATH: {repr(os.getenv('PLAYWRIGHT_BROWSERS_PATH'))}")
-            print(f"🔍 BUILDPACK_BROWSERS_INSTALL_PATH: {repr(os.getenv('BUILDPACK_BROWSERS_INSTALL_PATH'))}")
             
             # Special case: if the logs show the path but Python doesn't see it, try direct path
             chromium_path = None
@@ -32,66 +28,27 @@ async def get_available_dates():
                 chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
                 # Filter out invalid values like "0" or empty strings
                 if chromium_path and chromium_path != "0" and chromium_path.strip():
-                    print(f"🔍 Found CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
+                    print(f"🔍 Using CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
                     # Verify the path exists
-                    if os.path.exists(chromium_path):
-                        print(f"🔍 Chromium executable verified at: {chromium_path}")
-                    else:
+                    if not os.path.exists(chromium_path):
                         print(f"⚠️ Chromium executable not found at: {chromium_path}")
                         chromium_path = None
                 else:
                     chromium_path = None
-                    print(f"🔍 CHROMIUM_EXECUTABLE_PATH not usable: {os.getenv('CHROMIUM_EXECUTABLE_PATH')}")
-                
-                # Fallback: try the PLAYWRIGHT_BROWSERS_PATH (from playwright-community buildpack)
-                if not chromium_path:
-                    browsers_path = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
-                    # Filter out invalid values like "0" or empty strings  
-                    if browsers_path and browsers_path != "0" and browsers_path.strip():
-                        print(f"🔍 Found PLAYWRIGHT_BROWSERS_PATH: {browsers_path}")
-                        chromium_pattern = os.path.join(browsers_path, "chromium-*/chrome-linux/chrome")
-                        matches = glob.glob(chromium_pattern)
-                        if matches:
-                            chromium_path = matches[0]
-                            print(f"🔍 Found Chromium at: {chromium_path}")
-                    else:
-                        print(f"🔍 PLAYWRIGHT_BROWSERS_PATH not usable: {browsers_path}")
             
-            # Additional fallback: try other common Heroku paths
+            # Quick fallback if still not found
             if not chromium_path:
-                print("🔍 Searching for Chromium in common Heroku locations...")
+                print("🔍 Searching for Chromium in fallback locations...")
                 fallback_patterns = [
                     "/app/browsers/chromium-*/chrome-linux/chrome",
-                    "/app/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-                    "/tmp/playwright_browsers/chromium-*/chrome-linux/chrome"
+                    "/app/.cache/ms-playwright/chromium-*/chrome-linux/chrome"
                 ]
                 
                 for pattern in fallback_patterns:
-                    print(f"🔍 Trying pattern: {pattern}")
                     matches = glob.glob(pattern)
-                    print(f"🔍 Matches found: {matches}")
                     if matches:
                         chromium_path = matches[0]
                         print(f"🔍 Found Chromium via fallback: {chromium_path}")
-                        break
-                        
-            # Last resort: try to find any chrome executable
-            if not chromium_path:
-                print("🔍 Last resort: searching for any Chrome executable...")
-                last_resort_patterns = [
-                    "/app/**/chrome",
-                    "/app/**/chromium",
-                    "/usr/bin/google-chrome*",
-                    "/usr/bin/chromium*"
-                ]
-                
-                for pattern in last_resort_patterns:
-                    print(f"🔍 Trying last resort pattern: {pattern}")
-                    matches = glob.glob(pattern, recursive=True)
-                    print(f"🔍 Last resort matches: {matches}")
-                    if matches:
-                        chromium_path = matches[0]
-                        print(f"🔍 Found Chrome executable: {chromium_path}")
                         break
         else:
             # Local development - let Playwright handle it automatically
@@ -100,46 +57,62 @@ async def get_available_dates():
         # Debug: print the path being used
         print(f"🔍 Using Chromium path: {chromium_path}")
         
-        # Configuración robusta para Heroku
+        # Configuración optimizada para Heroku (menos memoria)
         browser_args = [
             "--no-sandbox",
-            "--disable-setuid-sandbox",
+            "--disable-setuid-sandbox", 
             "--disable-dev-shm-usage",
-            "--disable-accelerated-2d-canvas",
             "--disable-gpu",
             "--disable-web-security",
-            "--disable-features=VizDisplayCompositor",
-            "--disable-extensions",
-            "--disable-plugins",
+            "--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess",
             "--disable-background-timer-throttling",
             "--disable-backgrounding-occluded-windows",
             "--disable-renderer-backgrounding",
-            "--disable-field-trial-config",
-            "--disable-back-forward-cache",
+            "--disable-extensions",
+            "--disable-plugins",
+            "--disable-default-apps",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--disable-translate",
+            "--hide-scrollbars",
+            "--metrics-recording-only",
+            "--mute-audio",
+            "--no-first-run",
+            "--safebrowsing-disable-auto-update",
             "--disable-ipc-flooding-protection",
-            "--single-process"
+            "--memory-pressure-off",
+            "--max_old_space_size=460",  # Limit memory usage
+            "--single-process"  # Use single process to save memory
         ]
         
         browser = await p.chromium.launch(
-            headless=HEADLESS, 
-            slow_mo=100,
+            headless=True,  # Force headless on Heroku to save memory
+            slow_mo=0,  # Remove slow_mo to speed up
             executable_path=chromium_path if chromium_path else None,
             args=browser_args
         )
         
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            # Disable images and CSS to save memory and speed up loading
+            ignore_https_errors=True
         )
         
         page = await context.new_page()
         
-        # Configurar timeouts más largos
-        page.set_default_timeout(60000)  # 60 segundos
-        page.set_default_navigation_timeout(60000)
+        # Configurar timeouts más cortos para evitar que Heroku mate el proceso
+        page.set_default_timeout(30000)  # 30 segundos
+        page.set_default_navigation_timeout(30000)
+        
+        # Bloquear recursos innecesarios para ahorrar memoria y tiempo
+        await page.route("**/*.{png,jpg,jpeg,gif,webp,svg,css,woff,woff2,ttf}", lambda route: route.abort())
 
         try:
-            await page.goto("https://agendamiento.dian.gov.co/", wait_until="networkidle")
+            print("🔍 Navigating to DIAN website...")
+            await page.goto("https://agendamiento.dian.gov.co/", wait_until="domcontentloaded")  # Cambiar a domcontentloaded para ser más rápido
+            
+            print("🔍 Filling form...")
             await page.locator("#control_209").click()
             await page.locator("div").filter(has_text=re.compile(r"^PersonaNatural$")).first.click()
             await page.locator("div").filter(has_text=re.compile(r"^Videoatención$")).first.click()
@@ -148,7 +121,8 @@ async def get_available_dates():
             await page.locator("#control_205").click()
             await page.locator("#control_194").get_by_role("img").click()
 
-            await page.wait_for_selector(".k-calendar", timeout=30000)
+            print("🔍 Waiting for calendar...")
+            await page.wait_for_selector(".k-calendar", timeout=20000)  # Reducir timeout
             calendario = await page.query_selector(".k-calendar")
             dias = []
             dia_agendado = None
