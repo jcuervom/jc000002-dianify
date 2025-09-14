@@ -42,7 +42,9 @@ def test_logic_explanation():
     print()
     
     print("🔍 Para probar manualmente:")
-    print("python test_modal_behavior.py  # Con navegador visible")
+    print("python tests/test_modal_behavior.py  # Con navegador visible")
+    print("python tests/test_control_209.py     # Verificar clicks en #control_209")
+    print("python tests/test_scraper_directo.py # Test completo del scraper")
 
 if __name__ == "__main__":
     test_logic_explanation()

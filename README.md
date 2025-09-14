@@ -120,10 +120,42 @@ NODE_ENV=production
 python main.py
 
 # Ejecutar tests
-python tests/test_scraper.py
+python tests/test_scraper_directo.py
 
-# Debugging detallado
+# Test completo con debug detallado
 python tests/test_debug_scraper.py
+
+# Test visual (abre navegador)
+python tests/test_modal_behavior.py
+
+# Ver documentación de comportamiento
+python tests/test_explanation.py
+```
+
+## 🧪 Tests y Debugging
+
+Este proyecto incluye una suite completa de tests organizados en la carpeta `tests/`. Para más información detallada, consulta [tests/README.md](tests/README.md).
+
+### Tests Principales
+
+| Test | Descripción | Uso |
+|------|-------------|-----|
+| `test_scraper_directo.py` | Test completo del scraper principal | Verificación rápida |
+| `test_debug_scraper.py` | Test con logs detallados | Debugging |
+| `test_modal_behavior.py` | Test visual con navegador | Verificación manual |
+| `test_control_209.py` | Test específico de clicks | Debug de formularios |
+
+### Comandos de Test
+
+```bash
+# Test rápido (recomendado)
+python tests/test_scraper_directo.py
+
+# Debug completo
+python tests/test_debug_scraper.py
+
+# Test visual (requiere pantalla)
+python tests/test_modal_behavior.py
 ```
 
 ### Comandos Útiles

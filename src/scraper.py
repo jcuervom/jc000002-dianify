@@ -113,13 +113,31 @@ async def get_available_dates():
             print("🔍 Navigating to DIAN website...")
             await page.goto("https://agendamiento.dian.gov.co/", wait_until="domcontentloaded")
             
+            # Esperar un momento para que la página se cargue completamente
+            await page.wait_for_timeout(2000)
+            
             print("🔍 Filling form...")
+            # Esperar que el elemento esté disponible antes de hacer click
+            await page.wait_for_selector("#control_209", timeout=10000)
             await page.locator("#control_209").click()
+            
+            # Esperar un momento entre cada acción
+            await page.wait_for_timeout(1000)
             await page.locator("div").filter(has_text=re.compile(r"^PersonaNatural$")).first.click()
+            
+            await page.wait_for_timeout(1000)
             await page.locator("div").filter(has_text=re.compile(r"^Videoatención$")).first.click()
+            
+            await page.wait_for_timeout(1000)
             await page.locator(".contentImgCategoria > .img-fluid").first.click()
+            
+            await page.wait_for_timeout(1000)
             await page.get_by_role("combobox").select_option("332")
+            
+            await page.wait_for_timeout(1000)
             await page.locator("#control_205").click()
+            
+            await page.wait_for_timeout(1000)
             await page.locator("#control_194").get_by_role("img").click()
 
             print("🔍 Waiting for calendar...")
@@ -156,14 +174,19 @@ async def get_available_dates():
                             # Para intentos posteriores, recompletar todo el formulario
                             if i > 0:
                                 print("🔄 Recompletando formulario completo para el siguiente día...")
+                                print(f"🔍 URL antes de recompletar: {page.url}")
                                 try:
                                     calendario = await complete_form_and_get_calendar()
                                     if not calendario:
                                         print("❌ No se pudo recompletar el formulario")
                                         continue
                                     
+                                    print("✅ Formulario recompletado exitosamente")
+                                    print(f"🔍 URL después de recompletar: {page.url}")
+                                    
                                     # Re-obtener todos los días disponibles
                                     dias_celdas_actual = await calendario.query_selector_all("td:not(.k-state-disabled) a.k-link")
+                                    print(f"🔍 Días disponibles después de recompletar: {len(dias_celdas_actual)}")
                                     
                                     # Buscar el día específico que queremos intentar
                                     celda_objetivo = None
@@ -176,13 +199,18 @@ async def get_available_dates():
                                     if not celda_objetivo:
                                         print(f"⚠️ El día {dia} ya no está disponible después de recompletar")
                                         continue
+                                    
+                                    print(f"✅ Día {dia} encontrado después de recompletar")
                                         
                                 except Exception as e:
                                     print(f"❌ Error al recompletar formulario: {e}")
+                                    import traceback
+                                    traceback.print_exc()
                                     continue
                             else:
                                 # Primera vez, usar los días ya obtenidos del calendario inicial
                                 celda_objetivo = dias_celdas[i]
+                                print(f"🔍 Usando calendario inicial para día {dia}")
                             
                             # Hacer click en el día
                             await celda_objetivo.click()
@@ -197,8 +225,23 @@ async def get_available_dates():
                                 btn_cerrar = await modal.query_selector("#control_39")
                                 if btn_cerrar:
                                     await btn_cerrar.click()
-                                    print("🔄 Modal cerrado, la página redirigirá al inicio")
-                                    await page.wait_for_timeout(3000)  # Esperar redirección
+                                    print("🔄 Modal cerrado, esperando redirección completa...")
+                                    
+                                    # Esperar hasta que la URL cambie o que aparezca el botón inicial
+                                    max_wait = 10  # máximo 10 segundos
+                                    for wait_count in range(max_wait):
+                                        await page.wait_for_timeout(1000)
+                                        try:
+                                            # Verificar si ya apareció el botón inicial
+                                            initial_button = await page.query_selector("#control_209")
+                                            if initial_button:
+                                                print(f"✅ Redirección completada después de {wait_count + 1} segundos")
+                                                break
+                                        except:
+                                            pass
+                                    else:
+                                        print("⚠️ Tiempo agotado esperando redirección")
+                                        
                                 # El siguiente ciclo recompletará todo el formulario
                                 continue
                             else:
