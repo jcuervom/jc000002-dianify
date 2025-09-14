@@ -6,8 +6,8 @@ import gc
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from scraper import get_available_dates
-from notifier import send_message
+from src.scraper import get_available_dates
+from src.notifier import send_message
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):

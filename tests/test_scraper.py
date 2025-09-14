@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 
 import asyncio
-from scraper import get_available_dates
+import sys
+import os
+
+# Agregar el directorio padre al path para importar src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.scraper import get_available_dates
 
 async def test_scraper():
     print("🧪 Iniciando prueba del scraper en local...")

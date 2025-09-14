@@ -2,8 +2,8 @@ import re
 import os
 import glob
 from playwright.async_api import async_playwright
-from notifier import send_message
-from config import HEADLESS
+from .notifier import send_message
+from .config import HEADLESS
 
 async def get_available_dates():
     async with async_playwright() as p:
@@ -138,25 +138,41 @@ async def get_available_dates():
                     if texto.strip():
                         dias.append(texto.strip())
 
-                # Intentar seleccionar cada día disponible
+                # Intentar seleccionar cada día disponible hasta encontrar uno que funcione
                 if dias_celdas:
-                    print(f"🔍 Intentando hacer click en el primer día: {dias[0] if dias else 'Sin días'}")
-                    for celda in dias_celdas:
+                    print(f"🔍 Intentando agendar cita. Días disponibles: {dias}")
+                    
+                    for i, celda in enumerate(dias_celdas):
+                        dia_actual = dias[i] if i < len(dias) else f"día {i+1}"
                         try:
+                            print(f"🔍 Intentando día {dia_actual}...")
                             await celda.click()
-                            # Esperar a ver si aparece el modal de error
+                            
+                            # Esperar un momento para ver si aparece el modal de error
+                            await page.wait_for_timeout(2000)  # Esperar 2 segundos
+                            
                             modal = await page.query_selector("div[nombrepantalla='ModalError']")
                             if modal:
-                                error_modal = True
+                                print(f"⚠️ Error al intentar agendar día {dia_actual}")
                                 btn_cerrar = await modal.query_selector("#control_39")
                                 if btn_cerrar:
                                     await btn_cerrar.click()
-                                break
+                                    await page.wait_for_timeout(1000)  # Esperar que se cierre el modal
+                                # Continuar con el siguiente día
+                                continue
                             else:
+                                # ¡Éxito! Se pudo agendar
                                 dia_agendado = await celda.inner_text()
+                                print(f"✅ ¡Cita agendada exitosamente para el día {dia_agendado}!")
                                 break
-                        except Exception:
+                        except Exception as e:
+                            print(f"❌ Error al hacer click en día {dia_actual}: {e}")
                             continue
+                    
+                    # Si se intentaron todos los días y ninguno funcionó
+                    if not dia_agendado and dias:
+                        print("⚠️ Se intentaron todos los días disponibles pero ninguno permitió agendar")
+                        error_modal = True
                 else:
                     print("ℹ️ No hay días disponibles en el calendario")
             else:

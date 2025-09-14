@@ -1,0 +1,14 @@
+# Development dependencies
+pytest==7.4.0
+pytest-asyncio==0.21.0
+black==23.7.0
+flake8==6.0.0
+mypy==1.5.1
+
+# Additional testing tools
+playwright-pytest==0.4.2
+requests==2.31.0
+
+# Documentation
+mkdocs==1.5.2
+mkdocs-material==9.1.21

@@ -3,9 +3,14 @@
 import re
 import os
 import glob
+import sys
+
+# Agregar el directorio padre al path para importar src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from playwright.async_api import async_playwright
-from notifier import send_message
-from config import HEADLESS
+from src.notifier import send_message
+from src.config import HEADLESS
 
 async def get_available_dates_debug():
     async with async_playwright() as p:
@@ -153,31 +158,74 @@ async def get_available_dates_debug():
                         dias.append(texto.strip())
                         print(f"🔍 Día {i+1}: {texto.strip()}")
 
-                # Intentar hacer click en el primer día disponible
+                # Intentar hacer click en cada día disponible hasta encontrar uno que funcione
                 dia_agendado = None
                 error_modal = False
                 
                 if dias_celdas:
-                    print("🔍 Intentando hacer click en el primer día disponible...")
-                    try:
-                        await dias_celdas[0].click()
-                        print("🔍 Click realizado, esperando respuesta...")
-                        
-                        # Esperar un momento para ver si aparece modal de error
-                        await page.wait_for_timeout(2000)
-                        
-                        modal = await page.query_selector("div[nombrepantalla='ModalError']")
-                        if modal:
-                            print("⚠️ Modal de error detectado")
-                            error_modal = True
-                            btn_cerrar = await modal.query_selector("#control_39")
-                            if btn_cerrar:
-                                await btn_cerrar.click()
-                        else:
-                            dia_agendado = await dias_celdas[0].inner_text()
-                            print(f"✅ Día agendado exitosamente: {dia_agendado}")
-                    except Exception as click_error:
-                        print(f"❌ Error al hacer click: {click_error}")
+                    print(f"🔍 Intentando agendar cita. Días disponibles: {dias}")
+                    
+                    for i, celda in enumerate(dias_celdas):
+                        dia_actual = dias[i] if i < len(dias) else f"día {i+1}"
+                        try:
+                            print(f"🔍 Intentando día {dia_actual}...")
+                            
+                            # Verificar que la página sigue accesible
+                            try:
+                                await page.wait_for_selector(".k-calendar", timeout=5000)
+                            except:
+                                print("⚠️ El calendario ya no está disponible, posible redirección")
+                                break
+                            
+                            # Re-obtener los elementos del calendario por si la página cambió
+                            calendario_actual = await page.query_selector(".k-calendar")
+                            if not calendario_actual:
+                                print("⚠️ No se puede encontrar el calendario actual")
+                                break
+                                
+                            dias_celdas_actual = await calendario_actual.query_selector_all("td:not(.k-state-disabled) a.k-link")
+                            if i >= len(dias_celdas_actual):
+                                print(f"⚠️ El día {dia_actual} ya no está disponible")
+                                continue
+                            
+                            celda_actual = dias_celdas_actual[i]
+                            await celda_actual.click()
+                            print(f"🔍 Click realizado en día {dia_actual}, esperando respuesta...")
+                            
+                            # Esperar un momento para ver si aparece modal de error
+                            await page.wait_for_timeout(2000)
+                            
+                            modal = await page.query_selector("div[nombrepantalla='ModalError']")
+                            if modal:
+                                print(f"⚠️ Error al intentar agendar día {dia_actual}")
+                                btn_cerrar = await modal.query_selector("#control_39")
+                                if btn_cerrar:
+                                    await btn_cerrar.click()
+                                    await page.wait_for_timeout(1000)  # Esperar que se cierre el modal
+                                # Continuar con el siguiente día
+                                continue
+                            else:
+                                # ¡Éxito! Se pudo agendar
+                                dia_agendado = dia_actual
+                                print(f"✅ ¡Cita agendada exitosamente para el día {dia_agendado}!")
+                                break
+                        except Exception as click_error:
+                            print(f"❌ Error al hacer click en día {dia_actual}: {click_error}")
+                            # Si hay un error, intentar recargar el calendario
+                            try:
+                                await page.wait_for_timeout(2000)
+                                await page.reload()
+                                await page.wait_for_selector(".k-calendar", timeout=10000)
+                                print("🔄 Página recargada, intentando continuar...")
+                            except:
+                                print("❌ No se pudo recargar la página")
+                                break
+                            continue
+                    
+                    # Si se intentaron todos los días y ninguno funcionó
+                    if not dia_agendado and dias:
+                        print("⚠️ Se intentaron todos los días disponibles pero ninguno permitió agendar")
+                        error_modal = True
 
                 await browser.close()
                 
